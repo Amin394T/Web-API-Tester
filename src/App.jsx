@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import RequestSection from "./components/RequestSection";
 import RequestBodyEditor from "./components/RequestBodyEditor";
 import HeadersEditor from "./components/HeadersEditor";
+import QueryParamsEditor from "./components/QueryParamsEditor";
 import ResponsePanel from "./components/ResponsePanel";
 
 const BODY_METHODS = ["POST", "PUT", "PATCH", "DELETE"];
@@ -11,6 +12,7 @@ function App() {
   const [url, setUrl] = useState("");
   const [body, setBody] = useState("");
   const [headers, setHeaders] = useState([]);
+  const [queryParams, setQueryParams] = useState([]);
   const [response, setResponse] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -22,6 +24,17 @@ function App() {
     if (!url.trim()) {
       setError("Please enter a URL.");
       return;
+    }
+
+    // Build full URL with query params
+    let fullUrl = url.trim();
+    const activeParams = queryParams.filter(({ key }) => key.trim());
+    if (activeParams.length > 0) {
+      const urlObj = new URL(fullUrl);
+      activeParams.forEach(({ key, value }) => {
+        urlObj.searchParams.append(key.trim(), value.trim());
+      });
+      fullUrl = urlObj.toString();
     }
 
     const hasBody = BODY_METHODS.includes(method);
@@ -60,7 +73,7 @@ function App() {
     setLoading(true);
     const start = Date.now();
     try {
-      const res = await fetch(url, opts);
+      const res = await fetch(fullUrl, opts);
       const duration = Date.now() - start;
 
       const rawText = await res.text();
@@ -125,6 +138,11 @@ function App() {
           />
 
           <RequestBodyEditor method={method} body={body} setBody={setBody} />
+
+          <QueryParamsEditor
+            queryParams={queryParams}
+            setQueryParams={setQueryParams}
+          />
 
           <HeadersEditor headers={headers} setHeaders={setHeaders} />
 
